@@ -4,17 +4,20 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: qualcommax
+        description: "Target qualcommax"
         required: true
         type: string
       subtarget:
-        description: ipq50xx
+        description: "Subtarget ipq50xx"
         required: true
         type: string
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     container:
       image: ghcr.io/openwrt/sdk:${{ inputs.target }}-${{ inputs.subtarget }}-SNAPSHOT
       options: --user root
