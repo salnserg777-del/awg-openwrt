@@ -1,0 +1,63 @@
+yaml
+name: Build AmneziaWG Snapshot
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Target (qualcommax)"
+        required: true
+        type: string
+      subtarget:
+        description: "Subtarget (ipq50xx)"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/openwrt/sdk:${{ inputs.target }}-${{ inputs.subtarget }}-SNAPSHOT
+      options: --user root
+    steps:
+      - name: Checkout AWG source code
+        uses: actions/checkout@v4
+
+      - name: Setup SDK and build
+        run: |
+          set -euo pipefail
+          WORKSPACE_DIR=$(pwd)
+          cd /builder
+
+          if [ ! -d scripts ]; then
+            ./setup.sh
+          fi
+
+          AWG_FEED_DIR="$WORKSPACE_DIR/.tmp-awg-feed"
+          mkdir -p "$AWG_FEED_DIR"
+          cp -a "$WORKSPACE_DIR/kmod-amneziawg" "$AWG_FEED_DIR/"
+          cp -a "$WORKSPACE_DIR/amneziawg-tools" "$AWG_FEED_DIR/"
+          cp -a "$WORKSPACE_DIR/luci-proto-amneziawg" "$AWG_FEED_DIR/"
+
+          cp feeds.conf.default feeds.conf
+          echo "src-link awg $AWG_FEED_DIR" >> feeds.conf
+
+          ./scripts/feeds update base luci awg
+          ./scripts/feeds install -p awg kmod-amneziawg amneziawg-tools luci-proto-amneziawg
+
+          echo "CONFIG_PACKAGE_kmod-amneziawg=m" > .config
+          echo "CONFIG_PACKAGE_amneziawg-tools=y" >> .config
+          echo "CONFIG_PACKAGE_luci-proto-amneziawg=y" >> .config
+          echo "CONFIG_PACKAGE_luci-i18n-amneziawg-ru=y" >> .config
+          make defconfig
+
+          mkdir -p "$WORKSPACE_DIR/out"
+          make V=s PACKAGE_DIR="$WORKSPACE_DIR/out" package/feeds/awg/luci-proto-amneziawg/compile
+
+          find "$WORKSPACE_DIR/out" -type f ! -name "*amneziawg*.apk" -delete
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: amneziawg-${{ inputs.target }}-${{ inputs.subtarget }}-snapshot
+          path: out/*.apk
