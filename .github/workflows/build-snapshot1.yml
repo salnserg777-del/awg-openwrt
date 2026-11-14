@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: qualcommax
+        description: Target: qualcommax
         required: true
         type: string
       subtarget:
-        description: ipq50xx
+        description: Subtarget: ipq50xx
         required: true
         type: string
 
