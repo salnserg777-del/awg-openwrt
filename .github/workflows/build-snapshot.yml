@@ -1,15 +1,14 @@
-yaml
 name: Build AmneziaWG Snapshot
 
 on:
   workflow_dispatch:
     inputs:
       target:
-        description: "Target (qualcommax)"
+        description: qualcommax
         required: true
         type: string
       subtarget:
-        description: "Subtarget (ipq50xx)"
+        description: ipq50xx
         required: true
         type: string
 
